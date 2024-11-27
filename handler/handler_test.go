@@ -2,6 +2,7 @@ package handler
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -12,26 +13,80 @@ import (
 )
 
 func TestReceiptHandler_GetPointsForID(t *testing.T) {
-	type fields struct {
-		store store
+	db := database.NewInMemoryDatabase()
+	// adding this file to test already submitted receipt
+	testFile, err := os.ReadFile("../examples/test-receipt.json")
+	if err != nil {
+		t.Fatal(err)
 	}
-	type args struct {
-		w http.ResponseWriter
-		r *http.Request
+
+	var rcpt receipt.Receipt
+	err = json.Unmarshal(testFile, &rcpt)
+	if err != nil {
+		t.Fatal(err)
 	}
+
+	score := 10
+	id, err := db.Insert(rcpt, score)
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	tests := []struct {
-		name   string
-		fields fields
-		args   args
+		name             string
+		id               string
+		score            int
+		expectScore      int
+		expectStatusCode int
+		setupDB          func() store
 	}{
-		// TODO: Add test cases.
+		{
+			name:             "successful get",
+			id:               id,
+			score:            score,
+			expectScore:      10,
+			expectStatusCode: http.StatusOK,
+		},
+		{
+			name:             "id not found",
+			id:               "does-not-exist",
+			score:            score,
+			expectScore:      -1,
+			expectStatusCode: http.StatusNotFound,
+		},
+		{
+			name:             "id path value missing",
+			id:               "",
+			score:            score,
+			expectScore:      -1,
+			expectStatusCode: http.StatusBadRequest,
+		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			h := &ReceiptHandler{
-				store: tt.fields.store,
+				store: db,
 			}
-			h.GetPointsForID(tt.args.w, tt.args.r)
+
+			w := httptest.NewRecorder()
+			r := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/receipts/%s/points", tt.id), nil)
+			r.SetPathValue("id", tt.id)
+
+			h.GetPointsForID(w, r)
+
+			if w.Result().StatusCode != tt.expectStatusCode {
+				t.Errorf("the response status code did not match. Got %d, want %d", w.Result().StatusCode, tt.expectStatusCode)
+			}
+
+			err = json.NewEncoder(w).Encode(rcpt)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if tt.expectScore >= 0 && tt.expectScore != tt.score {
+				t.Errorf("the response score did not match. Got %d, want %d", w.Result().Body, tt.score)
+			}
 		})
 	}
 }
