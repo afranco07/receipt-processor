@@ -6,9 +6,11 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/afranco07/receipt-processor/database"
 	"github.com/afranco07/receipt-processor/receipt"
+	"github.com/go-playground/validator/v10"
 )
 
 type store interface {
@@ -21,12 +23,15 @@ type errorMessage struct {
 }
 
 type ReceiptHandler struct {
-	store store
+	store     store
+	validator *validator.Validate
 }
 
 func New(store store) ReceiptHandler {
+
 	return ReceiptHandler{
-		store: store,
+		store:     store,
+		validator: validator.New(validator.WithRequiredStructEnabled()),
 	}
 }
 
@@ -78,12 +83,33 @@ func (h *ReceiptHandler) ProcessReceipt(w http.ResponseWriter, r *http.Request) 
 	var rcpt receipt.Receipt
 	if err := dec.Decode(&rcpt); err != nil {
 		log.Printf("error marshalling receipt: %v", err)
+		var timeErr *time.ParseError
+		if errors.As(err, &timeErr) {
+			w.WriteHeader(http.StatusBadRequest)
+			_ = enc.Encode(errorMessage{Message: fmt.Sprintf("%s is not a valid value", timeErr.Value)})
+			return
+		}
+
 		w.WriteHeader(http.StatusInternalServerError)
 		_ = enc.Encode(errorMessage{Message: "something went wrong"})
 		return
 	}
 
-	score := rcpt.GetScore()
+	validationErrors, err := rcpt.ValidateReceipt(h.validator)
+	if err != nil {
+		log.Printf("error validating receipt: %v", validationErrors)
+		w.WriteHeader(http.StatusBadRequest)
+		_ = enc.Encode(errorMessage{Message: err.Error()})
+		return
+	}
+
+	score, err := rcpt.GetScore()
+	if err != nil {
+		log.Printf("error getting receipt score: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		_ = enc.Encode(errorMessage{Message: "something went wrong"})
+		return
+	}
 
 	id, err := h.store.Insert(rcpt, score)
 	if err != nil {
@@ -101,4 +127,24 @@ func (h *ReceiptHandler) ProcessReceipt(w http.ResponseWriter, r *http.Request) 
 
 	w.WriteHeader(http.StatusCreated)
 	_ = enc.Encode(processReceiptResponse{Id: id})
+}
+
+func (h *ReceiptHandler) validateReceipt(rcpt receipt.Receipt) (validator.ValidationErrors, error) {
+	err := h.validator.Struct(rcpt)
+	if err == nil {
+		return nil, nil
+	}
+
+	var validationErrors validator.ValidationErrors
+	e := errors.As(err, &validationErrors)
+	if !e {
+		return nil, nil
+	}
+
+	var fields string
+	for _, v := range validationErrors {
+		fields += v.Field() + ", "
+	}
+
+	return validationErrors, errors.New(fmt.Sprintf("validation errors for the following fields: %s", fields))
 }

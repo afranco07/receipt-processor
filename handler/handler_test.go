@@ -10,6 +10,7 @@ import (
 
 	"github.com/afranco07/receipt-processor/database"
 	"github.com/afranco07/receipt-processor/receipt"
+	"github.com/go-playground/validator/v10"
 )
 
 func TestReceiptHandler_GetPointsForID(t *testing.T) {
@@ -145,7 +146,8 @@ func TestReceiptHandler_ProcessReceipt(t *testing.T) {
 			}
 
 			h := &ReceiptHandler{
-				store: db,
+				store:     db,
+				validator: validator.New(validator.WithRequiredStructEnabled()),
 			}
 
 			w := httptest.NewRecorder()

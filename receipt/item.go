@@ -7,8 +7,8 @@ import (
 )
 
 type Item struct {
-	ShortDescription string
-	Price            string
+	ShortDescription string `json:"shortDescription" validate:"required"`
+	Price            string `json:"price" validate:"required,numeric"`
 }
 
 func (i Item) scoreDescription() int {

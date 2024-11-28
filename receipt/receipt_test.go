@@ -94,7 +94,7 @@ func TestReceipt_GetScore(t *testing.T) {
 				Items:        tt.fields.Items,
 				Total:        tt.fields.Total,
 			}
-			if got := r.GetScore(); got != tt.want {
+			if got, _ := r.GetScore(); got != tt.want {
 				t.Errorf("GetScore() = %v, want %v", got, tt.want)
 			}
 		})
@@ -254,7 +254,7 @@ func TestReceipt_scoreTotal(t *testing.T) {
 			r := Receipt{
 				Total: tt.fields.Total,
 			}
-			if got := r.scoreTotal(); got != tt.want {
+			if got, _ := r.scoreTotal(); got != tt.want {
 				t.Errorf("scoreTotal() = %v, want %v", got, tt.want)
 			}
 		})

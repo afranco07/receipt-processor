@@ -1,27 +1,37 @@
 package receipt
 
 import (
+	"errors"
+	"fmt"
 	"math"
 	"strconv"
 	"strings"
 	"unicode"
+
+	"github.com/go-playground/validator/v10"
 )
 
 const multipleConstant = 0.25
 
 type Receipt struct {
-	Retailer     string       `json:"retailer"`
-	PurchaseDate purchaseDate `json:"purchaseDate"`
-	PurchaseTime purchaseTime `json:"purchaseTime"`
-	Items        []Item       `json:"items"`
-	Total        string       `json:"total"`
+	Retailer     string       `json:"retailer" validate:"required"`
+	PurchaseDate purchaseDate `json:"purchaseDate" validate:"required"`
+	PurchaseTime purchaseTime `json:"purchaseTime" validate:"required"`
+	Items        []Item       `json:"items" validate:"gt=0,dive"`
+	Total        string       `json:"total" validate:"required,numeric"`
 }
 
-func (r Receipt) GetScore() int {
+func (r Receipt) GetScore() (int, error) {
 	score := 0
 
 	score += r.scoreRetailer()
-	score += r.scoreTotal()
+
+	total, err := r.scoreTotal()
+	if err != nil {
+		return 0, nil
+	}
+	score += total
+
 	score += r.scoreItems()
 
 	for _, i := range r.Items {
@@ -31,7 +41,7 @@ func (r Receipt) GetScore() int {
 	score += r.PurchaseDate.scoreDay()
 	score += r.PurchaseTime.scoreTime()
 
-	return score
+	return score, nil
 }
 
 // scoreRetailer counts the number of alphanumeric characters
@@ -49,22 +59,45 @@ func (r Receipt) scoreRetailer() int {
 	return score
 }
 
-func (r Receipt) scoreTotal() int {
-	parts := strings.Split(r.Total, ".")
-
+func (r Receipt) scoreTotal() (int, error) {
 	score := 0
-	if parts[1] == "00" {
-		score += 50
+
+	total, err := strconv.ParseFloat(r.Total, 32)
+	if err != nil {
+		return 0, err
 	}
 
-	total, _ := strconv.ParseFloat(r.Total, 32)
 	if math.Mod(total, multipleConstant) == 0 {
 		score += 25
 	}
 
-	return score
+	if math.Mod(total*100, 100) == 0 {
+		score += 50
+	}
+
+	return score, nil
 }
 
 func (r Receipt) scoreItems() int {
 	return (len(r.Items) / 2) * 5
+}
+
+func (r Receipt) ValidateReceipt(v *validator.Validate) (validator.ValidationErrors, error) {
+	err := v.Struct(r)
+	if err == nil {
+		return nil, nil
+	}
+
+	var validationErrors validator.ValidationErrors
+	e := errors.As(err, &validationErrors)
+	if !e {
+		return nil, nil
+	}
+
+	var fields string
+	for _, v := range validationErrors {
+		fields += v.Field() + ", "
+	}
+
+	return validationErrors, errors.New(fmt.Sprintf("validation errors for the following fields: %s", fields))
 }
