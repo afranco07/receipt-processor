@@ -1,6 +1,7 @@
 package receipt
 
 import (
+	"github.com/go-playground/validator/v10"
 	"testing"
 	"time"
 )
@@ -256,6 +257,95 @@ func TestReceipt_scoreTotal(t *testing.T) {
 			}
 			if got, _ := r.scoreTotal(); got != tt.want {
 				t.Errorf("scoreTotal() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestValidateReceipt(t *testing.T) {
+	validate := validator.New()
+
+	tests := []struct {
+		name           string
+		input          Receipt
+		expectedErrors bool
+		expectedErr    string
+	}{
+		{
+			name: "Valid receipt",
+			input: Receipt{
+				Retailer:     "Store A",
+				PurchaseDate: purchaseDate(time.Date(2024, 11, 26, 0, 0, 0, 0, time.UTC)),
+				PurchaseTime: purchaseTime(time.Date(0, 1, 1, 15, 30, 0, 0, time.UTC)),
+				Items: []Item{
+					{ShortDescription: "Item A", Price: "10.00"},
+				},
+				Total: "10.00",
+			},
+			expectedErrors: false,
+			expectedErr:    "",
+		},
+		{
+			name: "Missing required fields",
+			input: Receipt{
+				Retailer:     "",
+				PurchaseDate: purchaseDate{},
+				PurchaseTime: purchaseTime{},
+				Items:        nil,
+				Total:        "",
+			},
+			expectedErrors: true,
+			expectedErr:    "validation errors for the following fields: Retailer, PurchaseDate, PurchaseTime, Items, Total, ",
+		},
+		{
+			name: "Invalid nested item validation",
+			input: Receipt{
+				Retailer:     "Store B",
+				PurchaseDate: purchaseDate(time.Date(2024, 11, 26, 0, 0, 0, 0, time.UTC)),
+				PurchaseTime: purchaseTime(time.Date(0, 1, 1, 15, 30, 0, 0, time.UTC)),
+				Items: []Item{
+					{ShortDescription: "", Price: "10.00"},  // Missing ShortDescription
+					{ShortDescription: "Item B", Price: ""}, // Missing Price
+				},
+				Total: "20.00",
+			},
+			expectedErrors: true,
+			expectedErr:    "validation errors for the following fields: ShortDescription, Price, ",
+		},
+		{
+			name: "Non-numeric total",
+			input: Receipt{
+				Retailer:     "Store C",
+				PurchaseDate: purchaseDate(time.Date(2024, 11, 26, 0, 0, 0, 0, time.UTC)),
+				PurchaseTime: purchaseTime(time.Date(0, 1, 1, 15, 30, 0, 0, time.UTC)),
+				Items: []Item{
+					{ShortDescription: "Item C", Price: "10.00"},
+				},
+				Total: "abc",
+			},
+			expectedErrors: true,
+			expectedErr:    "validation errors for the following fields: Total, ",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			validationErrors, err := tt.input.ValidateReceipt(validate)
+
+			if tt.expectedErrors {
+				if validationErrors == nil {
+					t.Errorf("expected validation errors but got nil")
+				}
+				if err == nil || err.Error() != tt.expectedErr {
+					t.Errorf("expected error %q but got %q", tt.expectedErr, err)
+				}
+			} else {
+				if validationErrors != nil {
+					t.Errorf("expected no validation errors but got %v", validationErrors)
+				}
+				if err != nil {
+					t.Errorf("expected no error but got %q", err)
+				}
 			}
 		})
 	}
