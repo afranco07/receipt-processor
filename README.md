@@ -1,3 +1,15 @@
+## To Run
+
+You will need Go version 1.23.0 to run this project
+
+You can use the following command to run this:
+
+```shell
+go run main.go
+```
+
+I will also include prebuilt binaries in the releases section 
+
 # Receipt Processor
 
 Build a webservice that fulfils the documented API. The API is described below. A formal definition is provided 
