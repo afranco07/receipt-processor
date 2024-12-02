@@ -13,6 +13,8 @@ import (
 	"github.com/go-playground/validator/v10"
 )
 
+// store is the interface used for the database
+// operations
 type store interface {
 	Get(string) (int, error)
 	Insert(receipt.Receipt, int) (string, error)

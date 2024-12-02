@@ -7,6 +7,8 @@ import (
 
 const timeOnly = "15:04"
 
+// purchaseDate is custom type used to parse the receipt
+// purchase date
 type purchaseDate time.Time
 
 func (d *purchaseDate) UnmarshalJSON(b []byte) error {
@@ -34,6 +36,8 @@ func (d *purchaseDate) scoreDay() int {
 	return 6
 }
 
+// purchaseTime is custom type used to parse the receipt
+// purchase time
 type purchaseTime time.Time
 
 func (pt *purchaseTime) UnmarshalJSON(b []byte) error {
