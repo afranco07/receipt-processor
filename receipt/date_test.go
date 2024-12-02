@@ -17,7 +17,7 @@ func Test_purchaseDate_UnmarshalJSON(t *testing.T) {
 		wantTime time.Time
 	}{
 		{
-			name: "",
+			name: "test example #1 parses and marshals correctly",
 			d:    purchaseDate{},
 			args: args{
 				b: []byte(`"2022-01-01"`),
@@ -26,7 +26,7 @@ func Test_purchaseDate_UnmarshalJSON(t *testing.T) {
 			wantTime: time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC),
 		},
 		{
-			name: "",
+			name: "test example #2 parses and marshals correctly",
 			d:    purchaseDate{},
 			args: args{
 				b: []byte(`"2022-03-20"`),
@@ -88,7 +88,7 @@ func Test_purchaseTime_UnmarshalJSON(t *testing.T) {
 		wantTime time.Time
 	}{
 		{
-			name: "",
+			name: "test example #1 parses and marshals correctly",
 			pt:   purchaseTime{},
 			args: args{
 				b: []byte(`"13:01"`),
@@ -97,7 +97,7 @@ func Test_purchaseTime_UnmarshalJSON(t *testing.T) {
 			wantTime: time.Date(0, 1, 1, 13, 1, 0, 0, time.UTC),
 		},
 		{
-			name: "",
+			name: "test example #2 parses and marshals correctly",
 			pt:   purchaseTime{},
 			args: args{
 				b: []byte(`"14:33"`),

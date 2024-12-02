@@ -13,7 +13,7 @@ func TestItem_scoreDescription(t *testing.T) {
 		want   int
 	}{
 		{
-			name: "",
+			name: "test example #1 mountain dew",
 			fields: fields{
 				ShortDescription: "Mountain Dew 12PK",
 				Price:            "6.49",
@@ -21,7 +21,7 @@ func TestItem_scoreDescription(t *testing.T) {
 			want: 0,
 		},
 		{
-			name: "",
+			name: "test example #1 emils cheese pizza",
 			fields: fields{
 				ShortDescription: "Emils Cheese Pizza",
 				Price:            "12.25",
@@ -29,7 +29,7 @@ func TestItem_scoreDescription(t *testing.T) {
 			want: 3,
 		},
 		{
-			name: "",
+			name: "test example #1 Klarbrunn",
 			fields: fields{
 				ShortDescription: "   Klarbrunn 12-PK 12 FL OZ  ",
 				Price:            "12.00",
@@ -37,7 +37,7 @@ func TestItem_scoreDescription(t *testing.T) {
 			want: 3,
 		},
 		{
-			name: "",
+			name: "test example #2 gatorade",
 			fields: fields{
 				ShortDescription: "Gatorade",
 				Price:            "2.25",

@@ -21,6 +21,8 @@ type Receipt struct {
 	Total        string       `json:"total" validate:"required,numeric"`
 }
 
+// GetScore gets the total number of points that is
+// awarded to receipt
 func (r Receipt) GetScore() (int, error) {
 	score := 0
 
@@ -59,6 +61,8 @@ func (r Receipt) scoreRetailer() int {
 	return score
 }
 
+// scoreTotal checks if the receipt total is a multiple of
+// 0.25 and has no cents
 func (r Receipt) scoreTotal() (int, error) {
 	score := 0
 

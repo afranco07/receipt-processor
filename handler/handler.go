@@ -28,7 +28,6 @@ type ReceiptHandler struct {
 }
 
 func New(store store) ReceiptHandler {
-
 	return ReceiptHandler{
 		store:     store,
 		validator: validator.New(validator.WithRequiredStructEnabled()),
@@ -127,24 +126,4 @@ func (h *ReceiptHandler) ProcessReceipt(w http.ResponseWriter, r *http.Request) 
 
 	w.WriteHeader(http.StatusCreated)
 	_ = enc.Encode(processReceiptResponse{Id: id})
-}
-
-func (h *ReceiptHandler) validateReceipt(rcpt receipt.Receipt) (validator.ValidationErrors, error) {
-	err := h.validator.Struct(rcpt)
-	if err == nil {
-		return nil, nil
-	}
-
-	var validationErrors validator.ValidationErrors
-	e := errors.As(err, &validationErrors)
-	if !e {
-		return nil, nil
-	}
-
-	var fields string
-	for _, v := range validationErrors {
-		fields += v.Field() + ", "
-	}
-
-	return validationErrors, errors.New(fmt.Sprintf("validation errors for the following fields: %s", fields))
 }
